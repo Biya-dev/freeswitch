@@ -75,6 +75,63 @@ MODELS = {
         "description": "OpenAI GPT-3.5 Turbo — requires credits",
     },
 
+    # ── Google AI Studio ──────────────────────────────────────────
+    "gemini-2.5-flash": {
+        "provider": "google",
+        "model": "gemini-2.5-flash",
+        "api_base": "https://generativelanguage.googleapis.com/v1beta/openai",
+        "free": True,
+        "description": "Google Gemini 2.5 Flash — massive 1M context, 1500 req/day",
+    },
+    "gemini-2.5-pro": {
+        "provider": "google",
+        "model": "gemini-2.5-pro",
+        "api_base": "https://generativelanguage.googleapis.com/v1beta/openai",
+        "free": True,
+        "description": "Google Gemini 2.5 Pro — high intelligence, 50 req/day",
+    },
+
+    # ── Mistral AI ────────────────────────────────────────────────
+    "codestral": {
+        "provider": "mistral",
+        "model": "codestral-latest",
+        "api_base": "https://api.mistral.ai/v1",
+        "free": True,
+        "description": "Mistral Codestral — native model for code generation",
+    },
+
+    # ── GitHub Models ─────────────────────────────────────────────
+    "github-gpt4o": {
+        "provider": "github",
+        "model": "gpt-4o",
+        "api_base": "https://models.inference.ai.azure.com",
+        "free": True,
+        "description": "GitHub Models GPT-4o — requires GitHub Personal Access Token",
+    },
+    "github-llama3.3": {
+        "provider": "github",
+        "model": "Llama-3.3-70B-Instruct",
+        "api_base": "https://models.inference.ai.azure.com",
+        "free": True,
+        "description": "GitHub Models Llama 3.3 70B — extremely capable",
+    },
+
+    # ── Groq Cloud ────────────────────────────────────────────────
+    "groq-llama3.1-8b": {
+        "provider": "groq",
+        "model": "llama-3.1-8b-instant",
+        "api_base": "https://api.groq.com/openai/v1",
+        "free": True,
+        "description": "Groq Llama 3.1 8B — ultra-fast LPU inference",
+    },
+    "groq-llama3.3-70b": {
+        "provider": "groq",
+        "model": "llama-3.3-70b-versatile",
+        "api_base": "https://api.groq.com/openai/v1",
+        "free": True,
+        "description": "Groq Llama 3.3 70B — fast and extremely smart",
+    },
+
     # ── Ollama (local, always free) ───────────────────────────────
     "ollama-llama3": {
         "provider": "ollama",

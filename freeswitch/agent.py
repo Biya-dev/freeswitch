@@ -179,20 +179,22 @@ def run_agent_loop(alias: str, task: str) -> None:
     """Core loop executing instructions using OpenRouter/OpenAI tool call schema."""
     info = get_model(alias)
 
-    if info["provider"] == "openrouter":
-        api_key = get_key("openrouter")
+    provider = info["provider"]
+    if provider in ("openrouter", "google", "mistral", "github", "groq"):
+        api_key = get_key(provider)
         if not api_key:
-            raise RuntimeError("No OpenRouter API key set. Run: fswitch config --key <YOUR_KEY>")
+            raise RuntimeError(f"No {provider.capitalize()} API key set. Run: fswitch config --key <YOUR_KEY>")
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://github.com/Biya-dev/freeswitch",
-            "X-Title": "freeswitch",
         }
-    elif info["provider"] == "ollama":
+        if provider == "openrouter":
+            headers["HTTP-Referer"] = "https://github.com/Biya-dev/freeswitch"
+            headers["X-Title"] = "freeswitch"
+    elif provider == "ollama":
         headers = {"Content-Type": "application/json"}
     else:
-        raise ValueError(f"Agent mode does not support provider: {info['provider']}")
+        raise ValueError(f"Agent mode does not support provider: {provider}")
 
     system_prompt = (
         "You are an autonomous AI coding assistant. You have access to local file system tools "

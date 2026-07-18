@@ -45,11 +45,20 @@ pip install .
 
 ## Setup (30 seconds)
 
-1. Get a **free** API key from [openrouter.ai/keys](https://openrouter.ai/keys) (no credit card needed)
+1. Get a **free** API key from your preferred provider:
+   - [OpenRouter](https://openrouter.ai/keys) (Best for variety)
+   - [Google AI Studio](https://aistudio.google.com/app/apikey) (Best for huge context limits)
+   - [Mistral AI](https://console.mistral.ai/api-keys/) (Best for Codestral)
+   - [GitHub Models](https://github.com/marketplace/models) (Built into GitHub, uses personal access tokens)
+   - [Groq Cloud](https://console.groq.com/keys) (Best for speed)
+
 2. Tell freeswitch about it:
 
 ```bash
 fswitch config --key sk-or-v1-your-key-here
+# For other providers, use the --provider flag:
+# fswitch config --provider google --key AIzaSy...
+# fswitch config --provider groq --key gsk_...
 ```
 
 That's it. You're ready.
@@ -113,17 +122,24 @@ Races every free model on the same prompt and shows you which is fastest.
 
 ## Supported Models
 
-| Alias | Model | Free | Best for |
-|-------|-------|:----:|----------|
-| `nemotron-ultra` | NVIDIA Nemotron Ultra 253B | Yes | Complex coding, agentic tasks |
-| `nemotron-super` | NVIDIA Nemotron Super 49B | Yes | Fast + smart balance |
-| `qwen3-coder` | Qwen3 Coder 480B | Yes | Code generation, 1M context |
-| `deepseek-r1` | DeepSeek R1 | Yes | Reasoning + math |
-| `gemini-flash` | Google Gemini 2.0 Flash | Yes | Fast responses, vision |
-| `llama-3.1-8b` | Meta Llama 3.1 8B | Yes | Lightweight tasks |
-| `mistral-7b` | Mistral 7B | Yes | Efficient all-rounder |
-| `qwen-2.5-7b` | Qwen 2.5 7B | Yes | Multilingual |
-| `ollama-llama3` | Llama 3 (local) | Yes | Fully offline |
+| Alias | Provider | Model | Free | Best for |
+|-------|----------|-------|:----:|----------|
+| `nemotron-ultra` | OpenRouter | NVIDIA Nemotron Ultra 253B | Yes | Complex coding, agentic tasks |
+| `nemotron-super` | OpenRouter | NVIDIA Nemotron Super 49B | Yes | Fast + smart balance |
+| `qwen3-coder` | OpenRouter | Qwen3 Coder 480B | Yes | Code generation, 1M context |
+| `deepseek-r1` | OpenRouter | DeepSeek R1 | Yes | Reasoning + math |
+| `gemini-flash` | OpenRouter | Google Gemini 2.0 Flash | Yes | Fast responses, vision |
+| `llama-3.1-8b` | OpenRouter | Meta Llama 3.1 8B | Yes | Lightweight tasks |
+| `mistral-7b` | OpenRouter | Mistral 7B | Yes | Efficient all-rounder |
+| `qwen-2.5-7b` | OpenRouter | Qwen 2.5 7B | Yes | Multilingual |
+| `gemini-2.5-flash`| Google | Gemini 2.5 Flash | Yes | Massive 1M context, 1500 req/day |
+| `gemini-2.5-pro` | Google | Gemini 2.5 Pro | Yes | High intelligence, 50 req/day |
+| `codestral` | Mistral | Codestral | Yes | Native model for code generation |
+| `github-gpt4o` | GitHub | GPT-4o | Yes | GitHub integrated access |
+| `github-llama3.3`| GitHub | Llama 3.3 70B Instruct | Yes | Extremely capable open weights |
+| `groq-llama3.1-8b`| Groq | Llama 3.1 8B | Yes | Ultra-fast LPU inference |
+| `groq-llama3.3-70b`| Groq | Llama 3.3 70B | Yes | Fast and extremely smart |
+| `ollama-llama3` | Ollama | Llama 3 (local) | Yes | Fully offline |
 
 ## Local Models with Ollama
 

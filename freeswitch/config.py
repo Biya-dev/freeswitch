@@ -10,6 +10,10 @@ DEFAULTS = {
     "active": "nemotron-ultra",
     "keys": {
         "openrouter": "",
+        "google": "",
+        "mistral": "",
+        "github": "",
+        "groq": "",
     },
 }
 
@@ -22,7 +26,8 @@ def load_config() -> dict:
     merged = copy.deepcopy(DEFAULTS)
     merged.update(data)
     merged.setdefault("keys", {})
-    merged["keys"].setdefault("openrouter", "")
+    for provider in DEFAULTS["keys"]:
+        merged["keys"].setdefault(provider, "")
     return merged
 
 

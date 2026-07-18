@@ -55,17 +55,25 @@ def cmd_use(args) -> None:
 
 def cmd_config(args) -> None:
     """Show or set configuration."""
+    provider = getattr(args, "provider", "openrouter")
+    
     if args.key is not None:
-        config.set_key("openrouter", args.key)
-        console.print("[green]>> Saved OpenRouter API key.[/]")
+        config.set_key(provider, args.key)
+        console.print(f"[green]>> Saved {provider.capitalize()} API key.[/]")
+        
     console.print(f"\n  Active model: [bold cyan]{config.get_active()}[/]")
-    key = config.get_key("openrouter")
-    if key:
-        masked = key[:8] + "..." + key[-4:] if len(key) > 12 else "****"
-        console.print(f"  OpenRouter key: [green]{masked}[/]")
-    else:
-        console.print("  OpenRouter key: [red]not set[/]")
-        console.print("  [dim]Set with: fswitch config --key sk-or-...[/]")
+    
+    # Show status of all configured keys
+    console.print("\n  [bold]API Keys:[/]")
+    for p in ("openrouter", "google", "mistral", "github", "groq"):
+        key = config.get_key(p)
+        if key:
+            masked = key[:8] + "..." + key[-4:] if len(key) > 12 else "****"
+            console.print(f"  {p.capitalize():<12} [green]{masked}[/]")
+        else:
+            console.print(f"  {p.capitalize():<12} [red]not set[/]")
+            
+    console.print("\n  [dim]Set a key with: fswitch config --provider <name> --key sk-...[/]")
     print()
 
 
@@ -209,9 +217,10 @@ def build_parser() -> argparse.ArgumentParser:
     pu.add_argument("alias", help="Model alias, e.g. nemotron-ultra")
     pu.set_defaults(func=cmd_use)
 
-    # fswitch config [--key KEY]
+    # fswitch config [--key KEY] [--provider PROVIDER]
     pc = sub.add_parser("config", help="Show / set configuration")
-    pc.add_argument("--key", help="Set OpenRouter API key")
+    pc.add_argument("--key", help="Set API key for a provider")
+    pc.add_argument("--provider", default="openrouter", choices=["openrouter", "google", "mistral", "github", "groq"], help="Provider to set the key for")
     pc.set_defaults(func=cmd_config)
 
     # fswitch chat "prompt"

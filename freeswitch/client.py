@@ -10,30 +10,34 @@ from .models import get_model
 def chat(alias: str, messages: list, stream: bool = True) -> str:
     """Route a chat request to the correct provider and return the full reply."""
     info = get_model(alias)
-    if info["provider"] == "openrouter":
-        return _chat_openrouter(info, messages, stream)
-    if info["provider"] == "ollama":
+    provider = info["provider"]
+    if provider in ("openrouter", "google", "mistral", "github", "groq"):
+        return _chat_openai_compatible(info, messages, stream, provider)
+    if provider == "ollama":
         return _chat_ollama(info, messages, stream)
-    raise ValueError(f"Unsupported provider: {info['provider']}")
+    raise ValueError(f"Unsupported provider: {provider}")
 
 
-def _chat_openrouter(info: dict, messages: list, stream: bool) -> str:
+def _chat_openai_compatible(info: dict, messages: list, stream: bool, provider: str) -> str:
     from .config import get_key
 
-    api_key = get_key("openrouter")
+    api_key = get_key(provider)
     if not api_key:
         raise RuntimeError(
-            "No OpenRouter API key set. Run: fswitch config --key <YOUR_KEY>\n"
-            "Or set the OPENROUTER_API_KEY environment variable."
+            f"No {provider.capitalize()} API key set. Run: fswitch config --key <YOUR_KEY>\n"
+            f"Or set the {provider.upper()}_API_KEY environment variable."
         )
 
     url = f"{info['api_base']}/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://github.com/Biya-dev/freeswitch",
-        "X-Title": "freeswitch",
     }
+    
+    if provider == "openrouter":
+        headers["HTTP-Referer"] = "https://github.com/Biya-dev/freeswitch"
+        headers["X-Title"] = "freeswitch"
+
     payload = {
         "model": info["model"],
         "messages": messages,
