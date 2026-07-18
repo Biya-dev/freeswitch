@@ -18,9 +18,16 @@ DEFAULTS = {
 }
 
 
+_config_cache = None
+
+
 def load_config() -> dict:
+    global _config_cache
+    if _config_cache is not None:
+        return _config_cache
     if not CONFIG_FILE.exists():
-        return copy.deepcopy(DEFAULTS)
+        _config_cache = copy.deepcopy(DEFAULTS)
+        return _config_cache
     with open(CONFIG_FILE, "r", encoding="utf-8") as f:
         data = json.load(f)
     merged = copy.deepcopy(DEFAULTS)
@@ -28,13 +35,20 @@ def load_config() -> dict:
     merged.setdefault("keys", {})
     for provider in DEFAULTS["keys"]:
         merged["keys"].setdefault(provider, "")
-    return merged
+    _config_cache = merged
+    return _config_cache
 
 
 def save_config(config: dict) -> None:
+    global _config_cache
+    _config_cache = copy.deepcopy(config)
     ensure_config_dir()
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump(config, f, indent=2)
+    try:
+        os.chmod(CONFIG_FILE, 0o600)
+    except Exception:
+        pass
 
 
 def get_active() -> str:

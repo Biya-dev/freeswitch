@@ -5,8 +5,11 @@ Allows the AI model to read/write files, list directories, and execute shell com
 
 import subprocess
 import json
+import logging
 import requests
 from pathlib import Path
+from typing import Any, Dict, List, Optional
+
 from rich.console import Console
 from rich.prompt import Confirm
 from rich.panel import Panel
@@ -14,6 +17,10 @@ from rich.syntax import Syntax
 
 from .config import get_key
 from .models import get_model
+
+# Configure module‑level logger
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 console = Console(force_terminal=True)
 
@@ -94,18 +101,39 @@ TOOLS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_code",
+            "description": "Search for a string pattern in the workspace files recursively.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "The text pattern to search for (case-insensitive)."},
+                    "path": {"type": "string", "description": "The directory path to search. Defaults to current directory '.'"}
+                },
+                "required": ["query"],
+            },
+        },
+    },
 ]
 
 # Tool implementations
-def tool_list_directory(path="."):
+def tool_list_directory(path: str = ".") -> str:
+    """Return a JSON payload containing a sorted list of files/folders in *path*.
+
+    The function never raises; errors are captured and reported in the JSON
+    ``status`` field.
+    """
     try:
         p = Path(path)
-        items = []
+        items: List[str] = []
         for child in p.iterdir():
             suffix = "/" if child.is_dir() else ""
             items.append(f"{child.name}{suffix}")
         return json.dumps({"status": "success", "contents": sorted(items)})
     except Exception as e:
+        logger.error("list_directory failed: %s", e)
         return json.dumps({"status": "error", "message": str(e)})
 
 
@@ -119,17 +147,26 @@ def tool_read_file(path):
         return json.dumps({"status": "error", "message": str(e)})
 
 
-def tool_write_file(path, content):
+def tool_write_file(path: str, content: str) -> str:
+    """Write *content* to *path*, creating parent directories as needed.
+
+    Returns a JSON response indicating success or error.
+    """
     try:
         p = Path(path)
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(content, encoding="utf-8")
         return json.dumps({"status": "success", "message": f"Successfully wrote to {path}"})
     except Exception as e:
+        logger.error("write_file failed: %s", e)
         return json.dumps({"status": "error", "message": str(e)})
 
 
-def tool_edit_file(path, old_content, new_content):
+def tool_edit_file(path: str, old_content: str, new_content: str) -> str:
+    """Replace a unique *old_content* block with *new_content* in *path*.
+
+    The function validates existence, uniqueness, and returns a JSON response.
+    """
     try:
         p = Path(path)
         if not p.is_file():
@@ -143,12 +180,18 @@ def tool_edit_file(path, old_content, new_content):
         p.write_text(new_text, encoding="utf-8")
         return json.dumps({"status": "success", "message": f"Successfully edited {path}."})
     except Exception as e:
+        logger.error("edit_file failed: %s", e)
         return json.dumps({"status": "error", "message": str(e)})
 
 
-def tool_run_command(command):
+def tool_run_command(command: str) -> str:
+    """Execute *command* in a subprocess and return a JSON payload.
+
+    The command is run with ``shell=True`` for convenience; output, return
+    code, and any error are captured. Errors are reported via the ``status``
+    field.
+    """
     try:
-        # Use shell=True for convenience, run in current workspace
         res = subprocess.run(
             command,
             shell=True,
@@ -163,15 +206,75 @@ def tool_run_command(command):
             "stderr": res.stderr,
         })
     except subprocess.TimeoutExpired:
+        logger.error("run_command timed out for: %s", command)
         return json.dumps({"status": "error", "message": "Command timed out after 60 seconds."})
     except Exception as e:
+        logger.error("run_command failed: %s", e)
         return json.dumps({"status": "error", "message": str(e)})
+
+
+def tool_search_code(query: str, path: str = ".") -> str:
+    """Recursively search all text files under *path* for *query* (case‑insensitive).
+
+    Returns a JSON object with either ``matches`` (list of ``file:line: snippet``)
+    or a friendly ``message`` when nothing is found.
+    """
+    try:
+        p = Path(path)
+        ignore_dirs = {".git", "__pycache__", ".pytest_cache", ".venv", "venv", "node_modules", "dist", "build", ".egg-info"}
+        results: List[str] = []
+        query_lower = query.lower()
+        
+        def search_dir(current_path: Path) -> None:
+            for child in sorted(current_path.iterdir()):
+                if child.is_dir():
+                    if child.name in ignore_dirs:
+                        continue
+                    search_dir(child)
+                elif child.is_file():
+                    # Skip binary or non‑code assets
+                    if child.suffix.lower() in {".png", ".jpg", ".jpeg", ".gif", ".ico", ".pdf", ".zip", ".tar", ".gz", ".db", ".sqlite", ".pyc"}:
+                        continue
+                    try:
+                        content = child.read_text(encoding="utf-8", errors="replace")
+                        for idx, line in enumerate(content.splitlines(), 1):
+                            if query_lower in line.lower():
+                                try:
+                                    rel = child.relative_to(Path.cwd())
+                                    path_str = str(rel)
+                                except ValueError:
+                                    path_str = str(child)
+                                results.append(f"{path_str}:{idx}: {line.strip()}")
+                    except Exception as exc:
+                        logger.debug("Skipping file %s due to read error: %s", child, exc)
+        
+        search_dir(p)
+        if not results:
+            return json.dumps({"status": "success", "message": "No matches found."})
+        return json.dumps({"status": "success", "matches": results[:100]})
+    except Exception as e:
+        logger.error("search_code failed: %s", e)
+        return json.dumps({"status": "error", "message": str(e)})
+
+
+def is_outside_workspace(path: Optional[str]) -> bool:
+    if not path:
+        return False
+    try:
+        target = Path(path).resolve()
+        workspace = Path.cwd().resolve()
+        return not (target == workspace or workspace in target.parents)
+    except Exception:
+        return True
 
 
 def execute_tool(name, arguments):
     """Router to call local functions and handle safety prompt."""
     if name == "list_directory":
         path = arguments.get("path", ".")
+        if is_outside_workspace(path):
+            console.print(f"\n[bold red]WARNING: Agent is attempting to access a directory outside the workspace![/]")
+            console.print(f"[bold red]Path:[/] {path}")
         console.print(f"\n[bold yellow]Agent Action:[/] List directory [cyan]'{path}'[/]")
         if Confirm.ask("Allow action?"):
             return tool_list_directory(path)
@@ -179,6 +282,9 @@ def execute_tool(name, arguments):
 
     elif name == "read_file":
         path = arguments.get("path")
+        if is_outside_workspace(path):
+            console.print(f"\n[bold red]WARNING: Agent is attempting to read outside the workspace![/]")
+            console.print(f"[bold red]Path:[/] {path}")
         console.print(f"\n[bold yellow]Agent Action:[/] Read file [cyan]'{path}'[/]")
         if Confirm.ask("Allow action?"):
             return tool_read_file(path)
@@ -187,10 +293,13 @@ def execute_tool(name, arguments):
     elif name == "write_file":
         path = arguments.get("path")
         content = arguments.get("content", "")
+        if is_outside_workspace(path):
+            console.print(f"\n[bold red]WARNING: Agent is attempting to write outside the workspace![/]")
+            console.print(f"[bold red]Path:[/] {path}")
         console.print(f"\n[bold yellow]Agent Action:[/] Write file [cyan]'{path}'[/]")
         
         # Preview file contents in syntax panel
-        ext = Path(path).suffix.strip(".")
+        ext = Path(path).suffix.strip(".") if path else "txt"
         syntax = Syntax(content[:500] + ("\n... [truncated]" if len(content) > 500 else ""), ext or "txt", theme="monokai", line_numbers=True)
         console.print(Panel(syntax, title=f"Preview: {path}", border_style="dim"))
 
@@ -202,6 +311,9 @@ def execute_tool(name, arguments):
         path = arguments.get("path")
         old_content = arguments.get("old_content", "")
         new_content = arguments.get("new_content", "")
+        if is_outside_workspace(path):
+            console.print(f"\n[bold red]WARNING: Agent is attempting to edit outside the workspace![/]")
+            console.print(f"[bold red]Path:[/] {path}")
         console.print(f"\n[bold yellow]Agent Action:[/] Edit file [cyan]'{path}'[/]")
         console.print("[red]- Old Content:[/]")
         console.print(old_content)
@@ -217,6 +329,17 @@ def execute_tool(name, arguments):
         if Confirm.ask("Allow action?"):
             return tool_run_command(cmd)
         return json.dumps({"status": "error", "message": "User denied run_command permission."})
+
+    elif name == "search_code":
+        query = arguments.get("query")
+        path = arguments.get("path", ".")
+        if is_outside_workspace(path):
+            console.print(f"\n[bold red]WARNING: Agent is attempting to search outside the workspace![/]")
+            console.print(f"[bold red]Path:[/] {path}")
+        console.print(f"\n[bold yellow]Agent Action:[/] Search code for [cyan]'{query}'[/] in [cyan]'{path}'[/]")
+        if Confirm.ask("Allow action?"):
+            return tool_search_code(query, path)
+        return json.dumps({"status": "error", "message": "User denied search_code permission."})
 
     return json.dumps({"status": "error", "message": f"Unknown tool name: {name}"})
 
@@ -267,11 +390,16 @@ def offer_git_commit(alias: str) -> None:
     console.print(res.stdout)
     
     if Confirm.ask("Would you like to commit these changes?"):
-        diff_res = subprocess.run("git diff", shell=True, capture_output=True, text=True)
+        diff_res = subprocess.run("git diff HEAD", shell=True, capture_output=True, text=True)
         diff_text = diff_res.stdout
         
         console.print("[dim]Generating commit message using active model...[/]")
-        prompt = f"Write a short, professional, 1-line git commit message for these changes. Do not include quotes or markdown formatting, just return the raw message:\n\n{diff_text[:4000]}"
+        prompt = (
+            "Write a short, professional, 1-line git commit message for these changes. "
+            "Do not include quotes or markdown formatting, just return the raw message.\n\n"
+            f"Git status:\n{res.stdout}\n\n"
+            f"Git diff:\n{diff_text[:4000]}"
+        )
         
         try:
             from .client import chat
@@ -287,7 +415,7 @@ def offer_git_commit(alias: str) -> None:
             console.print("[green]>> Changes committed successfully![/]")
 
 
-def run_agent_loop(alias: str, task: str) -> None:
+def run_agent_loop(alias: str, task: str, test_command: Optional[str] = None) -> None:
     """Core loop executing instructions using OpenRouter/OpenAI tool call schema."""
     info = get_model(alias)
 
@@ -347,8 +475,34 @@ def run_agent_loop(alias: str, task: str) -> None:
         }
 
         console.print(f"[bold cyan]Agent is thinking (Step {step+1}/{steps_limit})...[/]")
-        resp = requests.post(url, headers=headers, json=payload, timeout=90)
-        resp.raise_for_status()
+        
+        # Helper: send request with exponential backoff
+        def _post_with_retry() -> requests.Response:
+            import time
+            max_retries = 3
+            delay = 1.0
+            for attempt in range(max_retries):
+                try:
+                    resp = requests.post(url, headers=headers, json=payload, timeout=90)
+                    resp.raise_for_status()
+                    return resp
+                except requests.HTTPError as e:
+                    status = e.response.status_code if e.response is not None else 500
+                    if attempt == max_retries - 1 or (status != 429 and not (500 <= status < 600)):
+                        raise
+                    console.print(f"[yellow]Warning: HTTP {status} from provider. Retrying in {delay}s...[/]")
+                    time.sleep(delay)
+                    delay *= 2
+                except requests.RequestException as e:
+                    if attempt == max_retries - 1:
+                        raise
+                    console.print(f"[yellow]Warning: Request exception ({e}). Retrying in {delay}s...[/]")
+                    time.sleep(delay)
+                    delay *= 2
+            # Should never reach here
+            raise RuntimeError("Exhausted retries for provider request")
+        
+        resp = _post_with_retry()
         res_data = resp.json()
 
         choice = res_data["choices"][0]
@@ -362,10 +516,31 @@ def run_agent_loop(alias: str, task: str) -> None:
         # Check if the model wants to call tools
         tool_calls = message.get("tool_calls")
         if not tool_calls:
-            console.print("\n[bold green]>> Agent completed task successfully![/]\n")
-            # Offer Git Commit
-            offer_git_commit(alias)
-            break
+            if test_command:
+                console.print(f"\n[bold yellow]>> Running test command:[/] [cyan]'{test_command}'[/]...")
+                test_res = subprocess.run(test_command, shell=True, capture_output=True, text=True)
+                if test_res.returncode == 0:
+                    console.print("[bold green]>> Tests passed successfully![/]")
+                    console.print("\n[bold green]>> Agent completed task successfully![/]\n")
+                    offer_git_commit(alias)
+                    break
+                else:
+                    console.print(f"[bold red]>> Tests failed with code {test_res.returncode}![/]")
+                    error_output = (test_res.stdout + "\n" + test_res.stderr).strip()
+                    console.print(Panel(error_output[:1000] + ("\n... [truncated]" if len(error_output) > 1000 else ""), 
+                                        title="Test Failure Output", border_style="red"))
+                    
+                    feedback = (
+                        f"The test command '{test_command}' failed with exit code {test_res.returncode}.\n"
+                        f"Please examine the test output below, identify the problem, edit the files, and run again to verify.\n\n"
+                        f"Test Output:\n{error_output}"
+                    )
+                    messages.append({"role": "user", "content": feedback})
+                    continue
+            else:
+                console.print("\n[bold green]>> Agent completed task successfully![/]\n")
+                offer_git_commit(alias)
+                break
 
         # Process tool calls
         for tool_call in tool_calls:

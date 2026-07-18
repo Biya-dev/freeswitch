@@ -3,6 +3,7 @@
 import argparse
 import sys
 import time
+from pathlib import Path
 
 from rich.console import Console
 from rich.table import Table
@@ -165,6 +166,9 @@ def cmd_repl(args) -> None:
         try:
             reply = chat(alias, messages, stream=True)
             messages.append({"role": "assistant", "content": reply})
+        except KeyboardInterrupt:
+            console.print("\n[yellow]>> Generation aborted by user.[/]")
+            messages.pop()  # remove failed user message
         except (RuntimeError, ValueError, KeyError, requests.RequestException) as e:
             console.print(f"[red]Error: {e}[/]")
             messages.pop()  # remove failed user message
@@ -227,7 +231,7 @@ def cmd_agent(args) -> None:
     alias = args.model or config.get_active()
     from .agent import run_agent_loop
     try:
-        run_agent_loop(alias, args.task)
+        run_agent_loop(alias, args.task, test_command=getattr(args, "test", None))
     except Exception as e:
         console.print(f"[red]Error: {e}[/]")
         sys.exit(1)
@@ -308,6 +312,7 @@ def build_parser() -> argparse.ArgumentParser:
     pa = sub.add_parser("agent", help="Run as an autonomous developer agent to complete a task")
     pa.add_argument("task", help="The goal for the agent to achieve")
     pa.add_argument("-m", "--model", help="Override the active model")
+    pa.add_argument("-t", "--test", help="Command to run tests (e.g. 'pytest') for self-correction loop")
     pa.set_defaults(func=cmd_agent)
 
     # fswitch check

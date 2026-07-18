@@ -55,24 +55,30 @@ def _chat_openai_compatible(info: dict, messages: list, stream: bool, provider: 
                 resp.raise_for_status()
                 return resp.json()["choices"][0]["message"]["content"]
             else:
+                from rich.live import Live
+                from rich.markdown import Markdown
+                from rich.console import Console
+
+                console = Console(force_terminal=True)
                 full = []
-                with requests.post(url, headers=headers, json=payload, stream=True, timeout=120) as r:
-                    r.raise_for_status()
-                    for line in r.iter_lines(decode_unicode=True):
-                        if not line or not line.startswith("data:"):
-                            continue
-                        data = line[len("data:"):].strip()
-                        if data == "[DONE]":
-                            break
-                        try:
-                            chunk = json.loads(data)
-                            delta = chunk["choices"][0]["delta"].get("content", "")
-                        except (json.JSONDecodeError, KeyError, IndexError):
-                            continue
-                        if delta:
-                            print(delta, end="", flush=True)
-                            full.append(delta)
-                print()
+                print()  # Move to a new line for markdown block
+                with Live(Markdown(""), console=console, auto_refresh=True) as live:
+                    with requests.post(url, headers=headers, json=payload, stream=True, timeout=120) as r:
+                        r.raise_for_status()
+                        for line in r.iter_lines(decode_unicode=True):
+                            if not line or not line.startswith("data:"):
+                                continue
+                            data = line[len("data:"):].strip()
+                            if data == "[DONE]":
+                                break
+                            try:
+                                chunk = json.loads(data)
+                                delta = chunk["choices"][0]["delta"].get("content", "")
+                            except (json.JSONDecodeError, KeyError, IndexError):
+                                continue
+                            if delta:
+                                full.append(delta)
+                                live.update(Markdown("".join(full)))
                 return "".join(full)
         except requests.HTTPError as e:
             status = e.response.status_code if e.response is not None else 500
@@ -126,19 +132,25 @@ def _chat_ollama(info: dict, messages: list, stream: bool) -> str:
         resp.raise_for_status()
         return resp.json()["message"]["content"]
 
+    from rich.live import Live
+    from rich.markdown import Markdown
+    from rich.console import Console
+
+    console = Console(force_terminal=True)
     full = []
-    with requests.post(url, json=payload, stream=True, timeout=120) as r:
-        r.raise_for_status()
-        for line in r.iter_lines(decode_unicode=True):
-            if not line:
-                continue
-            try:
-                chunk = json.loads(line)
-                delta = chunk.get("message", {}).get("content", "")
-            except json.JSONDecodeError:
-                continue
-            if delta:
-                print(delta, end="", flush=True)
-                full.append(delta)
-    print()
+    print()  # Move to a new line for markdown block
+    with Live(Markdown(""), console=console, auto_refresh=True) as live:
+        with requests.post(url, json=payload, stream=True, timeout=120) as r:
+            r.raise_for_status()
+            for line in r.iter_lines(decode_unicode=True):
+                if not line:
+                    continue
+                try:
+                    chunk = json.loads(line)
+                    delta = chunk.get("message", {}).get("content", "")
+                except json.JSONDecodeError:
+                    continue
+                if delta:
+                    full.append(delta)
+                    live.update(Markdown("".join(full)))
     return "".join(full)
