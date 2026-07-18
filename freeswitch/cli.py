@@ -7,6 +7,8 @@ import time
 from rich.console import Console
 from rich.table import Table
 
+import requests
+
 from . import config
 from .client import chat
 from .models import list_models, get_model
@@ -76,7 +78,7 @@ def cmd_chat(args) -> None:
     console.print(f"[dim]Model:[/] [bold cyan]{alias}[/] [dim]({info.get('description', '')})[/]\n")
     try:
         chat(alias, messages, stream=True)
-    except (RuntimeError, ValueError, KeyError) as e:
+    except (RuntimeError, ValueError, KeyError, requests.RequestException) as e:
         console.print(f"[red]Error: {e}[/]")
         sys.exit(1)
 
@@ -125,7 +127,7 @@ def cmd_repl(args) -> None:
         try:
             reply = chat(alias, messages, stream=True)
             messages.append({"role": "assistant", "content": reply})
-        except (RuntimeError, ValueError, KeyError) as e:
+        except (RuntimeError, ValueError, KeyError, requests.RequestException) as e:
             console.print(f"[red]Error: {e}[/]")
             messages.pop()  # remove failed user message
         print()
