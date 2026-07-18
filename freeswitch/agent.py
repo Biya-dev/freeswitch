@@ -3,8 +3,6 @@
 Allows the AI model to read/write files, list directories, and execute shell commands.
 """
 
-import os
-import sys
 import subprocess
 import json
 import requests
@@ -180,10 +178,21 @@ def execute_tool(name, arguments):
 def run_agent_loop(alias: str, task: str) -> None:
     """Core loop executing instructions using OpenRouter/OpenAI tool call schema."""
     info = get_model(alias)
-    api_key = get_key("openrouter")
-    
-    if not api_key:
-        raise RuntimeError("No OpenRouter API key set. Run: fswitch config --key <YOUR_KEY>")
+
+    if info["provider"] == "openrouter":
+        api_key = get_key("openrouter")
+        if not api_key:
+            raise RuntimeError("No OpenRouter API key set. Run: fswitch config --key <YOUR_KEY>")
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://github.com/Biya-dev/freeswitch",
+            "X-Title": "freeswitch",
+        }
+    elif info["provider"] == "ollama":
+        headers = {"Content-Type": "application/json"}
+    else:
+        raise ValueError(f"Agent mode does not support provider: {info['provider']}")
 
     system_prompt = (
         "You are an autonomous AI coding assistant. You have access to local file system tools "
@@ -202,12 +211,8 @@ def run_agent_loop(alias: str, task: str) -> None:
     ]
 
     url = f"{info['api_base']}/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://github.com/Biya-dev/freeswitch",
-        "X-Title": "freeswitch",
-    }
+    if info["provider"] == "ollama":
+        url = f"{info['api_base']}/api/chat"
 
     console.print(f"\n[bold magenta]>> Starting agent loop...[/]")
     console.print(f"[dim]Task:[/] {task}\n")

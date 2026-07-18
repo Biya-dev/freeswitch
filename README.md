@@ -1,4 +1,8 @@
-# 🔀 freeswitch
+# freeswitch
+
+[![tests](https://github.com/Biya-dev/freeswitch/actions/workflows/tests.yml/badge.svg)](https://github.com/Biya-dev/freeswitch/actions)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-brightgreen.svg)](https://python.org)
 
 > **One command. Every free AI model. Zero cost.**
 
@@ -15,16 +19,17 @@ TODO: Add a demo GIF here!
 ![freeswitch demo](./demo.gif)
 -->
 
-## ✨ Features
+## Features
 
-- 🆓 **Free by default** — ships with 8+ free-tier models ready to go
-- 🔁 **One command to switch** — `fswitch use <alias>` and you're done
-- 💬 **Interactive REPL** — multi-turn conversations with `/switch` between models mid-chat
-- 🏁 **Benchmark mode** — race all free models against each other on the same prompt
-- 🖥️ **Local models** — works with Ollama for fully offline, private AI
-- 🪶 **Tiny footprint** — pure Python, just `requests` + `rich`, nothing heavy
+- **Free by default** — ships with 8+ free-tier models ready to go
+- **One command to switch** — `fswitch use <alias>` and you're done
+- **Interactive REPL** — multi-turn conversations with `/switch` between models mid-chat
+- **Autonomous agent** — `fswitch agent "build a todo app"` — reads/writes files, runs commands
+- **Benchmark mode** — race all free models against each other on the same prompt
+- **Local models** — works with Ollama for fully offline, private AI
+- **Tiny footprint** — pure Python, just `requests` + `rich`, nothing heavy
 
-## 📦 Install
+## Install
 
 ```bash
 pip install freeswitch
@@ -38,7 +43,7 @@ cd freeswitch
 pip install .
 ```
 
-## 🔑 Setup (30 seconds)
+## Setup (30 seconds)
 
 1. Get a **free** API key from [openrouter.ai/keys](https://openrouter.ai/keys) (no credit card needed)
 2. Tell freeswitch about it:
@@ -49,22 +54,12 @@ fswitch config --key sk-or-v1-your-key-here
 
 That's it. You're ready.
 
-## 🚀 Usage
+## Usage
 
 ### List available models
 
 ```bash
 fswitch list
-```
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ Alias          │ Provider   │ Free │ Description                │
-│ nemotron-ultra │ openrouter │  ✅  │ NVIDIA Nemotron Ultra 253B │
-│ qwen3-coder   │ openrouter │  ✅  │ Qwen3 Coder 480B          │
-│ deepseek-r1   │ openrouter │  ✅  │ DeepSeek R1                │
-│ ...            │            │      │                            │
-└─────────────────────────────────────────────────────────────────┘
 ```
 
 ### Switch model
@@ -92,6 +87,21 @@ Inside the REPL:
 - `/models` to list available models
 - `exit` to quit
 
+### Autonomous Agent
+
+```bash
+fswitch agent "create a Python script that fetches weather data"
+fswitch agent -m qwen3-coder "refactor this project to use async"
+```
+
+The agent can:
+- Read and write files on your machine
+- Run shell commands (with your approval)
+- Diagnose errors and self-correct
+- Complete multi-step coding tasks autonomously
+
+Every action requires your confirmation before executing.
+
 ### Benchmark all free models
 
 ```bash
@@ -101,21 +111,21 @@ fswitch benchmark --prompt "write a binary search in Rust"
 
 Races every free model on the same prompt and shows you which is fastest.
 
-## 🧩 Supported Models
+## Supported Models
 
 | Alias | Model | Free | Best for |
 |-------|-------|:----:|----------|
-| `nemotron-ultra` | NVIDIA Nemotron Ultra 253B | ✅ | Complex coding, agentic tasks |
-| `nemotron-super` | NVIDIA Nemotron Super 49B | ✅ | Fast + smart balance |
-| `qwen3-coder` | Qwen3 Coder 480B | ✅ | Code generation, 1M context |
-| `deepseek-r1` | DeepSeek R1 | ✅ | Reasoning + math |
-| `gemini-flash` | Google Gemini 2.0 Flash | ✅ | Fast responses, vision |
-| `llama-3.1-8b` | Meta Llama 3.1 8B | ✅ | Lightweight tasks |
-| `mistral-7b` | Mistral 7B | ✅ | Efficient all-rounder |
-| `qwen-2.5-7b` | Qwen 2.5 7B | ✅ | Multilingual |
-| `ollama-llama3` | Llama 3 (local) | ✅ | Fully offline |
+| `nemotron-ultra` | NVIDIA Nemotron Ultra 253B | Yes | Complex coding, agentic tasks |
+| `nemotron-super` | NVIDIA Nemotron Super 49B | Yes | Fast + smart balance |
+| `qwen3-coder` | Qwen3 Coder 480B | Yes | Code generation, 1M context |
+| `deepseek-r1` | DeepSeek R1 | Yes | Reasoning + math |
+| `gemini-flash` | Google Gemini 2.0 Flash | Yes | Fast responses, vision |
+| `llama-3.1-8b` | Meta Llama 3.1 8B | Yes | Lightweight tasks |
+| `mistral-7b` | Mistral 7B | Yes | Efficient all-rounder |
+| `qwen-2.5-7b` | Qwen 2.5 7B | Yes | Multilingual |
+| `ollama-llama3` | Llama 3 (local) | Yes | Fully offline |
 
-## 🖥️ Local Models with Ollama
+## Local Models with Ollama
 
 Install [Ollama](https://ollama.com), pull a model, and use it completely offline:
 
@@ -125,7 +135,7 @@ fswitch use ollama-llama3
 fswitch chat "hello local model!"
 ```
 
-## 🔧 Environment Variables
+## Environment Variables
 
 You can also set your API key via environment variable instead of `fswitch config`:
 
@@ -133,20 +143,20 @@ You can also set your API key via environment variable instead of `fswitch confi
 export OPENROUTER_API_KEY="sk-or-v1-..."
 ```
 
-## 🤝 Contributing
+## Contributing
 
 PRs welcome! Here's how to help:
 
 - **Add a model**: edit `freeswitch/models.py` — just add a new dict entry
 - **Add a provider**: add a new function in `freeswitch/client.py`
-- **Report issues**: [open an issue](https://github.com/bijayachauhan/freeswitch/issues)
+- **Report issues**: [open an issue](https://github.com/Biya-dev/freeswitch/issues)
 
 Please open an issue first for bigger changes.
 
-## 📜 License
+## License
 
 MIT — do whatever you want with it.
 
 ---
 
-**If this saved you time, drop a ⭐ on the repo!**
+**If this saved you time, drop a star on the repo!**

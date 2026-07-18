@@ -2,6 +2,7 @@
 
 import os
 import json
+import copy
 
 from . import CONFIG_FILE, ensure_config_dir
 
@@ -15,10 +16,10 @@ DEFAULTS = {
 
 def load_config() -> dict:
     if not CONFIG_FILE.exists():
-        return dict(DEFAULTS)
+        return copy.deepcopy(DEFAULTS)
     with open(CONFIG_FILE, "r", encoding="utf-8") as f:
         data = json.load(f)
-    merged = dict(DEFAULTS)
+    merged = copy.deepcopy(DEFAULTS)
     merged.update(data)
     merged.setdefault("keys", {})
     merged["keys"].setdefault("openrouter", "")

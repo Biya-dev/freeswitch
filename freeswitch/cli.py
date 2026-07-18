@@ -47,9 +47,8 @@ def cmd_list(_args) -> None:
 
 def cmd_use(args) -> None:
     """Set the active model."""
-    get_model(args.alias)  # validate alias exists
+    info = get_model(args.alias)  # validate alias exists (raises KeyError if not)
     config.set_active(args.alias)
-    info = get_model(args.alias)
     console.print(f"[green]>> Switched to[/] [bold cyan]{args.alias}[/]")
     console.print(f"  [dim]{info.get('description', '')}[/]")
 
@@ -62,7 +61,7 @@ def cmd_config(args) -> None:
     console.print(f"\n  Active model: [bold cyan]{config.get_active()}[/]")
     key = config.get_key("openrouter")
     if key:
-        masked = key[:8] + "..." + key[-4:]
+        masked = key[:8] + "..." + key[-4:] if len(key) > 12 else "****"
         console.print(f"  OpenRouter key: [green]{masked}[/]")
     else:
         console.print("  OpenRouter key: [red]not set[/]")
@@ -182,6 +181,8 @@ def cmd_benchmark(args) -> None:
             str(r["chars"]),
         )
     console.print(table)
+
+
 def cmd_agent(args) -> None:
     """Run the autonomous agent loop to complete a task."""
     alias = args.model or config.get_active()
