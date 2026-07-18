@@ -67,6 +67,22 @@ TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "edit_file",
+            "description": "Surgically edit an existing file by replacing a specific unique target block of text with new replacement text.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Path to the file to edit."},
+                    "old_content": {"type": "string", "description": "The exact unique string/block of code to be replaced. Must match exactly including whitespace and indentation."},
+                    "new_content": {"type": "string", "description": "The new replacement string/block of code."},
+                },
+                "required": ["path", "old_content", "new_content"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "run_command",
             "description": "Execute a shell command. Use this to install dependencies, run tests, or run build scripts.",
             "parameters": {
@@ -109,6 +125,23 @@ def tool_write_file(path, content):
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(content, encoding="utf-8")
         return json.dumps({"status": "success", "message": f"Successfully wrote to {path}"})
+    except Exception as e:
+        return json.dumps({"status": "error", "message": str(e)})
+
+
+def tool_edit_file(path, old_content, new_content):
+    try:
+        p = Path(path)
+        if not p.is_file():
+            return json.dumps({"status": "error", "message": f"{path} is not a file."})
+        content = p.read_text(encoding="utf-8")
+        if old_content not in content:
+            return json.dumps({"status": "error", "message": "Could not find 'old_content' in the target file. Indentation and characters must match exactly."})
+        if content.count(old_content) > 1:
+            return json.dumps({"status": "error", "message": "'old_content' matched multiple blocks in the target file. Make 'old_content' more unique."})
+        new_text = content.replace(old_content, new_content, 1)
+        p.write_text(new_text, encoding="utf-8")
+        return json.dumps({"status": "success", "message": f"Successfully edited {path}."})
     except Exception as e:
         return json.dumps({"status": "error", "message": str(e)})
 
@@ -164,6 +197,19 @@ def execute_tool(name, arguments):
         if Confirm.ask("Allow action?"):
             return tool_write_file(path, content)
         return json.dumps({"status": "error", "message": "User denied write_file permission."})
+
+    elif name == "edit_file":
+        path = arguments.get("path")
+        old_content = arguments.get("old_content", "")
+        new_content = arguments.get("new_content", "")
+        console.print(f"\n[bold yellow]Agent Action:[/] Edit file [cyan]'{path}'[/]")
+        console.print("[red]- Old Content:[/]")
+        console.print(old_content)
+        console.print("[green]+ New Content:[/]")
+        console.print(new_content)
+        if Confirm.ask("Allow action?"):
+            return tool_edit_file(path, old_content, new_content)
+        return json.dumps({"status": "error", "message": "User denied edit_file permission."})
 
     elif name == "run_command":
         cmd = arguments.get("command")
