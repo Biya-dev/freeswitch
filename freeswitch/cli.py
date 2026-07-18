@@ -178,10 +178,19 @@ def cmd_benchmark(args) -> None:
         table.add_row(
             r["alias"],
             r["status"],
-            f"{r['time']:.1f}s" if r["time"] > 0 else "-",
-            str(r["chars"]) if r["chars"] > 0 else "-",
+            f"{r['time']:.1f}s" if r['time'] > 0 else "-",
+            str(r["chars"]),
         )
     console.print(table)
+def cmd_agent(args) -> None:
+    """Run the autonomous agent loop to complete a task."""
+    alias = args.model or config.get_active()
+    from .agent import run_agent_loop
+    try:
+        run_agent_loop(alias, args.task)
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/]")
+        sys.exit(1)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -219,6 +228,12 @@ def build_parser() -> argparse.ArgumentParser:
     pb = sub.add_parser("benchmark", help="Benchmark all free models")
     pb.add_argument("--prompt", help="Custom prompt for benchmarking")
     pb.set_defaults(func=cmd_benchmark)
+
+    # fswitch agent "task"
+    pa = sub.add_parser("agent", help="Run as an autonomous developer agent to complete a task")
+    pa.add_argument("task", help="The goal for the agent to achieve")
+    pa.add_argument("-m", "--model", help="Override the active model")
+    pa.set_defaults(func=cmd_agent)
 
     return p
 
