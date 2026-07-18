@@ -221,6 +221,72 @@ def execute_tool(name, arguments):
     return json.dumps({"status": "error", "message": f"Unknown tool name: {name}"})
 
 
+def get_workspace_files(max_depth=3) -> list[str]:
+    files = []
+    ignore_dirs = {".git", "__pycache__", ".pytest_cache", ".venv", "venv", "node_modules", "dist", "build", ".egg-info"}
+    
+    def traverse(path: Path, depth: int):
+        if depth > max_depth:
+            return
+        try:
+            for item in sorted(path.iterdir()):
+                if item.is_dir():
+                    if item.name in ignore_dirs:
+                        continue
+                    traverse(item, depth + 1)
+                elif item.is_file():
+                    try:
+                        rel = item.relative_to(Path.cwd())
+                        files.append(str(rel))
+                    except ValueError:
+                        files.append(str(item))
+        except Exception:
+            pass
+            
+    traverse(Path.cwd(), 1)
+    return files
+
+
+def is_git_repo() -> bool:
+    try:
+        res = subprocess.run("git rev-parse --is-inside-work-tree", shell=True, capture_output=True, text=True)
+        return res.returncode == 0
+    except Exception:
+        return False
+
+
+def offer_git_commit(alias: str) -> None:
+    if not is_git_repo():
+        return
+        
+    res = subprocess.run("git status --porcelain", shell=True, capture_output=True, text=True)
+    if not res.stdout.strip():
+        return
+        
+    console.print("\n[bold green]Changes detected in workspace:[/]")
+    console.print(res.stdout)
+    
+    if Confirm.ask("Would you like to commit these changes?"):
+        diff_res = subprocess.run("git diff", shell=True, capture_output=True, text=True)
+        diff_text = diff_res.stdout
+        
+        console.print("[dim]Generating commit message using active model...[/]")
+        prompt = f"Write a short, professional, 1-line git commit message for these changes. Do not include quotes or markdown formatting, just return the raw message:\n\n{diff_text[:4000]}"
+        
+        try:
+            from .client import chat
+            msg = chat(alias, [{"role": "user", "content": prompt}], stream=False).strip()
+            msg = msg.strip('"`').replace("Commit message:", "").strip()
+        except Exception:
+            msg = "feat: updates from fswitch agent"
+            
+        console.print(f"Commit message: [bold cyan]{msg}[/]")
+        if Confirm.ask("Proceed with this commit message?"):
+            subprocess.run("git add -A", shell=True)
+            subprocess.run(f'git commit -m "{msg}"', shell=True)
+            console.print("[green]>> Changes committed successfully![/]")
+
+
 def run_agent_loop(alias: str, task: str) -> None:
     """Core loop executing instructions using OpenRouter/OpenAI tool call schema."""
     info = get_model(alias)
@@ -252,6 +318,12 @@ def run_agent_loop(alias: str, task: str) -> None:
         "4. If a step fails, diagnose the error and correct it.\n"
         "5. Explain what you're doing briefly before calling tools."
     )
+    
+    # Automatically add workspace context tree
+    workspace_files = get_workspace_files()
+    if workspace_files:
+        files_str = "\n".join(f"- {f}" for f in workspace_files[:100])
+        system_prompt += f"\n\nFiles present in the current workspace directory:\n{files_str}"
 
     messages = [
         {"role": "system", "content": system_prompt},
@@ -291,6 +363,8 @@ def run_agent_loop(alias: str, task: str) -> None:
         tool_calls = message.get("tool_calls")
         if not tool_calls:
             console.print("\n[bold green]>> Agent completed task successfully![/]\n")
+            # Offer Git Commit
+            offer_git_commit(alias)
             break
 
         # Process tool calls
@@ -319,3 +393,4 @@ def run_agent_loop(alias: str, task: str) -> None:
             })
     else:
         console.print("\n[bold red]Limit of 20 steps reached. Agent stopped.[/]\n")
+        offer_git_commit(alias)
