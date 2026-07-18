@@ -202,11 +202,44 @@ def cmd_agent(args) -> None:
         sys.exit(1)
 
 
+def cmd_check(_args) -> None:
+    """Validate API keys by sending a test request."""
+    providers_to_test = {
+        "openrouter": "nemotron-ultra",
+        "google": "gemini-2.5-flash",
+        "mistral": "codestral",
+        "github": "github-gpt4o",
+        "groq": "groq-llama3.1-8b"
+    }
+    
+    console.print("\n[bold cyan]Validating Configured API Keys...[/]")
+    
+    checked_any = False
+    for provider, test_model in providers_to_test.items():
+        key = config.get_key(provider)
+        if not key:
+            continue
+        checked_any = True
+        console.print(f"  Checking [cyan]{provider.capitalize()}[/] key...", end=" ")
+        try:
+            # Send a minimal prompt
+            messages = [{"role": "user", "content": "Say 'OK'"}]
+            chat(test_model, messages, stream=False)
+            console.print("[bold green]Success![/]")
+        except Exception as e:
+            console.print(f"[bold red]Failed:[/] {e}")
+            
+    if not checked_any:
+        console.print("  [yellow]No API keys configured! Set one using: fswitch config --provider <name> --key <key>[/]")
+    print()
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="fswitch",
         description="Switch and chat across free AI models with one command.",
     )
+    p.add_argument("--version", action="version", version="freeswitch 0.1.0")
     sub = p.add_subparsers(dest="command")
 
     # fswitch list
@@ -244,6 +277,9 @@ def build_parser() -> argparse.ArgumentParser:
     pa.add_argument("task", help="The goal for the agent to achieve")
     pa.add_argument("-m", "--model", help="Override the active model")
     pa.set_defaults(func=cmd_agent)
+
+    # fswitch check
+    sub.add_parser("check", help="Validate configured API keys").set_defaults(func=cmd_check)
 
     return p
 

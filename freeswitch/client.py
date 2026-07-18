@@ -44,30 +44,47 @@ def _chat_openai_compatible(info: dict, messages: list, stream: bool, provider: 
         "stream": stream,
     }
 
-    if not stream:
-        resp = requests.post(url, headers=headers, json=payload, timeout=120)
-        resp.raise_for_status()
-        return resp.json()["choices"][0]["message"]["content"]
-
-    full = []
-    with requests.post(url, headers=headers, json=payload, stream=True, timeout=120) as r:
-        r.raise_for_status()
-        for line in r.iter_lines(decode_unicode=True):
-            if not line or not line.startswith("data:"):
-                continue
-            data = line[len("data:"):].strip()
-            if data == "[DONE]":
-                break
-            try:
-                chunk = json.loads(data)
-                delta = chunk["choices"][0]["delta"].get("content", "")
-            except (json.JSONDecodeError, KeyError, IndexError):
-                continue
-            if delta:
-                print(delta, end="", flush=True)
-                full.append(delta)
-    print()
-    return "".join(full)
+    import time
+    max_retries = 3
+    delay = 1.0
+    
+    for attempt in range(max_retries):
+        try:
+            if not stream:
+                resp = requests.post(url, headers=headers, json=payload, timeout=120)
+                resp.raise_for_status()
+                return resp.json()["choices"][0]["message"]["content"]
+            else:
+                full = []
+                with requests.post(url, headers=headers, json=payload, stream=True, timeout=120) as r:
+                    r.raise_for_status()
+                    for line in r.iter_lines(decode_unicode=True):
+                        if not line or not line.startswith("data:"):
+                            continue
+                        data = line[len("data:"):].strip()
+                        if data == "[DONE]":
+                            break
+                        try:
+                            chunk = json.loads(data)
+                            delta = chunk["choices"][0]["delta"].get("content", "")
+                        except (json.JSONDecodeError, KeyError, IndexError):
+                            continue
+                        if delta:
+                            print(delta, end="", flush=True)
+                            full.append(delta)
+                print()
+                return "".join(full)
+        except requests.HTTPError as e:
+            status = e.response.status_code if e.response is not None else 500
+            if attempt == max_retries - 1 or (status != 429 and not (500 <= status < 600)):
+                raise
+            time.sleep(delay)
+            delay *= 2
+        except requests.RequestException:
+            if attempt == max_retries - 1:
+                raise
+            time.sleep(delay)
+            delay *= 2
 
 
 def _chat_ollama(info: dict, messages: list, stream: bool) -> str:

@@ -55,6 +55,10 @@ def set_key(provider: str, key: str) -> None:
 
 def get_key(provider: str) -> str:
     # Check environment variable first (e.g. OPENROUTER_API_KEY)
+    if provider == "github":
+        env_key = os.environ.get("GITHUB_TOKEN", "") or os.environ.get("GITHUB_API_KEY", "")
+        if env_key:
+            return env_key
     env_key = os.environ.get(f"{provider.upper()}_API_KEY", "")
     if env_key:
         return env_key
