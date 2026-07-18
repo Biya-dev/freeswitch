@@ -88,10 +88,37 @@ def _chat_openai_compatible(info: dict, messages: list, stream: bool, provider: 
 
 
 def _chat_ollama(info: dict, messages: list, stream: bool) -> str:
+    # Translate multimodal OpenAI messages format to Ollama format
+    formatted_messages = []
+    for msg in messages:
+        content = msg.get("content")
+        role = msg.get("role")
+        if isinstance(content, list):
+            text = ""
+            images = []
+            for item in content:
+                if item.get("type") == "text":
+                    text = item.get("text", "")
+                elif item.get("type") == "image_url":
+                    url = item.get("image_url", {}).get("url", "")
+                    if url.startswith("data:"):
+                        try:
+                            # Extract base64 representation
+                            _, base64_data = url.split(";base64,", 1)
+                            images.append(base64_data)
+                        except ValueError:
+                            pass
+            msg_data = {"role": role, "content": text}
+            if images:
+                msg_data["images"] = images
+            formatted_messages.append(msg_data)
+        else:
+            formatted_messages.append({"role": role, "content": content})
+
     url = f"{info['api_base']}/api/chat"
     payload = {
         "model": info["model"],
-        "messages": messages,
+        "messages": formatted_messages,
         "stream": stream,
     }
     if not stream:

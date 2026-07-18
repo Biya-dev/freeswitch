@@ -80,7 +80,38 @@ def cmd_config(args) -> None:
 def cmd_chat(args) -> None:
     """Send a single prompt to the active (or specified) model."""
     alias = args.model or config.get_active()
-    messages = [{"role": "user", "content": args.prompt}]
+    
+    if getattr(args, "image", None):
+        import base64
+        import mimetypes
+        image_path = Path(args.image)
+        if not image_path.is_file():
+            console.print(f"[red]Error: Image file not found: {args.image}[/]")
+            sys.exit(1)
+        mime_type, _ = mimetypes.guess_type(args.image)
+        if not mime_type:
+            mime_type = "image/jpeg"
+        try:
+            with open(image_path, "rb") as f:
+                encoded = base64.b64encode(f.read()).decode("utf-8")
+            messages = [{
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": args.prompt},
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{mime_type};base64,{encoded}"
+                        }
+                    }
+                ]
+            }]
+        except Exception as e:
+            console.print(f"[red]Error processing image: {e}[/]")
+            sys.exit(1)
+    else:
+        messages = [{"role": "user", "content": args.prompt}]
+
     info = get_model(alias)
     console.print(f"[dim]Model:[/] [bold cyan]{alias}[/] [dim]({info.get('description', '')})[/]\n")
     try:
@@ -260,6 +291,7 @@ def build_parser() -> argparse.ArgumentParser:
     pch = sub.add_parser("chat", help="Send a single prompt to the active model")
     pch.add_argument("prompt", help="The prompt to send")
     pch.add_argument("-m", "--model", help="Override the active model for this request")
+    pch.add_argument("-i", "--image", help="Path to an image to include with the prompt")
     pch.set_defaults(func=cmd_chat)
 
     # fswitch repl (interactive)
