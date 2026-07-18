@@ -24,7 +24,9 @@ TODO: Add a demo GIF here!
 - **Free by default** — ships with 8+ free-tier models ready to go
 - **One command to switch** — `fswitch use <alias>` and you're done
 - **Interactive REPL** — multi-turn conversations with `/switch` between models mid-chat
-- **Autonomous agent** — `fswitch agent "build a todo app"` — reads/writes files, runs commands
+- **Autonomous agent** — `fswitch agent "build a todo app"` — reads/writes files, runs tests, and self-corrects!
+- **Unified Provider Registry** — supports OpenRouter, Google, Mistral, GitHub, Groq, and *Native Anthropic* (Claude)
+- **Beautiful UI** — smooth streaming with `rich` and visual `⠋ Thinking...` animations
 - **Benchmark mode** — race all free models against each other on the same prompt
 - **Local models** — works with Ollama for fully offline, private AI
 - **Tiny footprint** — pure Python, just `requests` + `rich`, nothing heavy
@@ -46,7 +48,8 @@ pip install .
 ## Setup (30 seconds)
 
 1. Get a **free** API key from your preferred provider:
-   - [OpenRouter](https://openrouter.ai/keys) (Best for variety)
+   - [OpenRouter](https://openrouter.ai/keys) (Best for variety & free tiers)
+   - [Anthropic](https://console.anthropic.com/settings/keys) (For native Claude 3.5 Sonnet)
    - [Google AI Studio](https://aistudio.google.com/app/apikey) (Best for huge context limits)
    - [Mistral AI](https://console.mistral.ai/api-keys/) (Best for Codestral)
    - [GitHub Models](https://github.com/marketplace/models) (Built into GitHub, uses personal access tokens)
@@ -57,6 +60,7 @@ pip install .
 ```bash
 fswitch config --key sk-or-v1-your-key-here
 # For other providers, use the --provider flag:
+# fswitch config --provider anthropic --key sk-ant-...
 # fswitch config --provider google --key AIzaSy...
 # fswitch config --provider groq --key gsk_...
 ```
@@ -106,8 +110,13 @@ fswitch agent -m qwen3-coder "refactor this project to use async"
 The agent can:
 - Read and write files on your machine
 - Run shell commands (with your approval)
-- Diagnose errors and self-correct
 - Complete multi-step coding tasks autonomously
+- **Self-Correct:** Pass the `--test` flag, and if the tests fail, the AI will automatically fix the code until they pass!
+
+Example of autonomous self-correction:
+```bash
+fswitch agent "create a calculator function" --test "pytest tests/test_calc.py"
+```
 
 Every action requires your confirmation before executing.
 
@@ -139,6 +148,7 @@ Races every free model on the same prompt and shows you which is fastest.
 | `github-llama3.3`| GitHub | Llama 3.3 70B Instruct | Yes | Extremely capable open weights |
 | `groq-llama3.1-8b`| Groq | Llama 3.1 8B | Yes | Ultra-fast LPU inference |
 | `groq-llama3.3-70b`| Groq | Llama 3.3 70B | Yes | Fast and extremely smart |
+| `claude-3.5-sonnet`| Anthropic | Claude 3.5 Sonnet | **No** | Complex agentic tasks (Native Endpoint) |
 | `ollama-llama3` | Ollama | Llama 3 (local) | Yes | Fully offline |
 
 ## Local Models with Ollama
