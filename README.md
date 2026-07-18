@@ -9,7 +9,7 @@
 Tired of juggling API keys, rewriting boilerplate, and guessing which free model actually works? `freeswitch` gives you **one CLI** to switch between, chat with, and benchmark free AI models — no vendor lock-in, no credit card.
 
 ```bash
-pip install freeswitch
+pip install fswitch-cli
 fswitch use nemotron-ultra
 fswitch chat "write a REST API in Python"
 ```
@@ -32,7 +32,7 @@ TODO: Add a demo GIF here!
 ## Install
 
 ```bash
-pip install freeswitch
+pip install fswitch-cli
 ```
 
 Or from source:
