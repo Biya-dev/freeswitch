@@ -36,7 +36,7 @@ def test_default_active_is_valid():
 
 def test_all_free_models_have_free_tag():
     for m in models.list_models():
-        if m["free"] and m["provider"] == "openrouter":
+        if m["free"] and m["provider"] == "openrouter" and m["model"] != "openrouter/free":
             assert ":free" in m["model"], \
                 f"{m['alias']} is marked free but model ID has no :free suffix"
 

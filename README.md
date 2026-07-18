@@ -124,14 +124,14 @@ Races every free model on the same prompt and shows you which is fastest.
 
 | Alias | Provider | Model | Free | Best for |
 |-------|----------|-------|:----:|----------|
-| `nemotron-ultra` | OpenRouter | NVIDIA Nemotron Ultra 253B | Yes | Complex coding, agentic tasks |
-| `nemotron-super` | OpenRouter | NVIDIA Nemotron Super 49B | Yes | Fast + smart balance |
-| `qwen3-coder` | OpenRouter | Qwen3 Coder 480B | Yes | Code generation, 1M context |
+| `nemotron-ultra` | OpenRouter | NVIDIA Nemotron 3 Ultra 550B | Yes | Reasoning, orchestration |
+| `nemotron-super` | OpenRouter | NVIDIA Nemotron 3 Super 120B | Yes | General & agentic workflows |
+| `qwen3-coder` | OpenRouter | Qwen3 Coder | Yes | Code generation, repo-scale context |
+| `gemma-4` | OpenRouter | Google Gemma 4 31B | Yes | General multimodal instruction |
+| `laguna` | OpenRouter | Poolside Laguna M.1 | Yes | Coding-agent experiments |
+| `laguna-xs` | OpenRouter | Poolside Laguna XS 2.1 | Yes | Fast coding-agent tasks |
 | `deepseek-r1` | OpenRouter | DeepSeek R1 | Yes | Reasoning + math |
-| `gemini-flash` | OpenRouter | Google Gemini 2.0 Flash | Yes | Fast responses, vision |
-| `llama-3.1-8b` | OpenRouter | Meta Llama 3.1 8B | Yes | Lightweight tasks |
-| `mistral-7b` | OpenRouter | Mistral 7B | Yes | Efficient all-rounder |
-| `qwen-2.5-7b` | OpenRouter | Qwen 2.5 7B | Yes | Multilingual |
+| `auto-free` | OpenRouter | Auto-Free Router | Yes | Auto-routes to best free model |
 | `gemini-2.5-flash`| Google | Gemini 2.5 Flash | Yes | Massive 1M context, 1500 req/day |
 | `gemini-2.5-pro` | Google | Gemini 2.5 Pro | Yes | High intelligence, 50 req/day |
 | `codestral` | Mistral | Codestral | Yes | Native model for code generation |

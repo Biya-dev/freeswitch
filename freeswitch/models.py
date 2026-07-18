@@ -11,24 +11,45 @@ MODELS = {
     # ── OpenRouter free-tier models (best for coding) ──────────────
     "nemotron-ultra": {
         "provider": "openrouter",
-        "model": "nvidia/llama-3.1-nemotron-ultra-253b:free",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
         "api_base": "https://openrouter.ai/api/v1",
         "free": True,
-        "description": "NVIDIA Nemotron Ultra 253B — best free agentic/coding model",
+        "description": "NVIDIA Nemotron 3 Ultra 550B — best free reasoning/orchestration model",
     },
     "nemotron-super": {
         "provider": "openrouter",
-        "model": "nvidia/llama-3.1-nemotron-super-49b:free",
+        "model": "nvidia/nemotron-3-super-120b-a12b:free",
         "api_base": "https://openrouter.ai/api/v1",
         "free": True,
-        "description": "NVIDIA Nemotron Super 49B — fast and smart",
+        "description": "NVIDIA Nemotron 3 Super 120B — fast general & agentic workflows",
     },
     "qwen3-coder": {
         "provider": "openrouter",
-        "model": "qwen/qwen3-coder-480b-a35b:free",
+        "model": "qwen/qwen3-coder:free",
         "api_base": "https://openrouter.ai/api/v1",
         "free": True,
-        "description": "Qwen3 Coder 480B — specialized for code, 1M context",
+        "description": "Qwen3 Coder — specialized for code, repository-scale context",
+    },
+    "gemma-4": {
+        "provider": "openrouter",
+        "model": "google/gemma-4-31b-it:free",
+        "api_base": "https://openrouter.ai/api/v1",
+        "free": True,
+        "description": "Google Gemma 4 31B — general multimodal instruction",
+    },
+    "laguna": {
+        "provider": "openrouter",
+        "model": "poolside/laguna-m.1:free",
+        "api_base": "https://openrouter.ai/api/v1",
+        "free": True,
+        "description": "Poolside Laguna M.1 — coding-agent experiments",
+    },
+    "laguna-xs": {
+        "provider": "openrouter",
+        "model": "poolside/laguna-xs-2.1:free",
+        "api_base": "https://openrouter.ai/api/v1",
+        "free": True,
+        "description": "Poolside Laguna XS 2.1 — fast coding-agent tasks",
     },
     "deepseek-r1": {
         "provider": "openrouter",
@@ -37,33 +58,12 @@ MODELS = {
         "free": True,
         "description": "DeepSeek R1 — strong reasoning and coding",
     },
-    "llama-3.1-8b": {
+    "auto-free": {
         "provider": "openrouter",
-        "model": "meta-llama/llama-3.1-8b-instruct:free",
+        "model": "openrouter/free",
         "api_base": "https://openrouter.ai/api/v1",
         "free": True,
-        "description": "Llama 3.1 8B — lightweight and fast",
-    },
-    "mistral-7b": {
-        "provider": "openrouter",
-        "model": "mistralai/mistral-7b-instruct:free",
-        "api_base": "https://openrouter.ai/api/v1",
-        "free": True,
-        "description": "Mistral 7B — efficient all-rounder",
-    },
-    "qwen-2.5-7b": {
-        "provider": "openrouter",
-        "model": "qwen/qwen-2.5-7b-instruct:free",
-        "api_base": "https://openrouter.ai/api/v1",
-        "free": True,
-        "description": "Qwen 2.5 7B — great multilingual support",
-    },
-    "gemini-flash": {
-        "provider": "openrouter",
-        "model": "google/gemini-2.0-flash-exp:free",
-        "api_base": "https://openrouter.ai/api/v1",
-        "free": True,
-        "description": "Google Gemini 2.0 Flash — fast with vision",
+        "description": "OpenRouter Auto-Free — auto-routes to best available free model",
     },
 
     # ── Paid models (OpenRouter) ──────────────────────────────────
@@ -73,6 +73,15 @@ MODELS = {
         "api_base": "https://openrouter.ai/api/v1",
         "free": False,
         "description": "OpenAI GPT-3.5 Turbo — requires credits",
+    },
+
+    # ── Anthropic (Paid) ──────────────────────────────────────────
+    "claude-3.5-sonnet": {
+        "provider": "anthropic",
+        "model": "claude-3-5-sonnet-20240620",
+        "api_base": "https://api.anthropic.com/v1",
+        "free": False,
+        "description": "Anthropic Claude 3.5 Sonnet — native endpoint",
     },
 
     # ── Google AI Studio ──────────────────────────────────────────
